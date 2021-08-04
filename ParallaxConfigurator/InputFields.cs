@@ -1,6 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using System.Globalization;
-using System.Collections.Generic;
 
 
 namespace ParallaxConfigurator
@@ -18,10 +18,10 @@ namespace ParallaxConfigurator
         private static string activeTexFieldLastValue = "";
         private static string activeTexFieldString    = "";
 
-        private static readonly GUIStyle TexStyle = new GUIStyle(GUI.skin.textArea) {wordWrap = true};
+        private static readonly GUIStyle TexStyle = new GUIStyle(GUI.skin.textArea) { wordWrap = true };
 
         /// <summary>
-        /// Float Field for in-game purposes. Behaves exactly like UnityEditor.EditorGUILayout.FloatField
+        /// Float input field for in-game cfg editing. Behaves exactly like UnityEditor.EditorGUILayout.FloatField
         /// </summary>
         public static float FloatField(float value)
         {
@@ -80,7 +80,11 @@ namespace ParallaxConfigurator
 
             return value;
         }
-
+        
+        /// <summary>
+        /// Color input field for in-game cfg editing. Parses basic colors (e.g. "yellow"), as well as any
+        /// string in the format "r, g, b, (a)". Ignores any character before or after the comma-separated floats.
+        /// </summary>
         public static Color ColorField(Color value)
         {
             // Get rect and control for this float field for identification
@@ -138,7 +142,11 @@ namespace ParallaxConfigurator
 
             return value;
         }
-        
+
+        /// <summary>
+        /// Special-purpose Text input field for in-game editing. Meant for dds or png textures' paths.
+        /// Check if texture file exists before applying the value.
+        /// </summary>
         public static string TexField(string value)
         {
             // Get rect and control for this float field for identification
@@ -148,6 +156,9 @@ namespace ParallaxConfigurator
             if (texFieldID == 0)
                 return value;
 
+            TextEditor text = new TextEditor();
+            text.DetectFocusChange();
+
             // has the value been recorded?
             bool recorded = activeFieldID == texFieldID;
             // is the field being edited?
@@ -156,7 +167,7 @@ namespace ParallaxConfigurator
             if (active && recorded && activeTexFieldLastValue != value)
             {
                 // Value has been modified externally
-                activeTexFieldLastValue = string.Copy(value);
+                activeTexFieldLastValue = value;
                 activeTexFieldString = string.Copy(value);
             }
 
@@ -174,7 +185,15 @@ namespace ParallaxConfigurator
             bool valid = true;
             if (strValue != value)
             {
-                valid = GameDatabase.Instance.ExistsTexture(strValue);
+                string path = KSPUtil.ApplicationRootPath + "GameData/" + strValue;
+
+                if (!System.IO.File.Exists(path))
+                    valid = false;
+
+                if (!path.EndsWith(".dds", StringComparison.OrdinalIgnoreCase) &&
+                    !path.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                    valid = false;
+
                 if (valid)
                     value = activeTexFieldLastValue = strValue;
             }
@@ -184,7 +203,7 @@ namespace ParallaxConfigurator
                 // Gained focus this frame
                 activeFieldID = texFieldID;
                 activeTexFieldString = strValue;
-                activeTexFieldLastValue = string.Copy(value);
+                activeTexFieldLastValue = value;
             }
             else if (!active && recorded)
             {
@@ -198,45 +217,63 @@ namespace ParallaxConfigurator
         }
 
         /// <summary>
-        /// Float Field for in-game purposes. Behaves exactly like UnityEditor.EditorGUILayout.FloatField
+        /// Float input field with label. Displays the label on the left, and the input field on the right.
         /// </summary>
         public static float FloatField(GUIContent label, float value, GUIContent labelType = null)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, label != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
+            GUILayout.Label(label,
+                label != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
             if (labelType != null)
             {
                 GUILayout.FlexibleSpace();
-                GUILayout.Label(labelType, labelType != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
+                GUILayout.Label(labelType,
+                    labelType != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
             }
+
+            GUI.SetNextControlName(label.text);
             value = FloatField(value);
             GUILayout.EndHorizontal();
             return value;
         }
         
+        /// <summary>
+        /// Color input field with label. Displays the label on the left, and the input field on the right.
+        /// </summary>
         public static Color ColorField(GUIContent label, Color value, GUIContent labelType = null)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, label != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
+            GUILayout.Label(label,
+                label != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
             if (labelType != null)
             {
                 GUILayout.FlexibleSpace();
-                GUILayout.Label(labelType, labelType != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
+                GUILayout.Label(labelType,
+                    labelType != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
             }
+
+            GUI.SetNextControlName(label.text);
             value = ColorField(value);
             GUILayout.EndHorizontal();
             return value;
         }
-        
+
+        /// <summary>
+        /// Texture path input field with label. Displays the label on the left, and the input field on the right.
+        /// </summary>
         public static string TexField(GUIContent label, string value, GUIContent labelType = null)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label, label != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
+            GUILayout.Label(label,
+                label != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
             if (labelType != null)
             {
                 GUILayout.FlexibleSpace();
-                GUILayout.Label(labelType, labelType != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
+                GUILayout.Label(labelType,
+                    labelType != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
             }
+
+            GUI.SetNextControlName(label.text);
             value = TexField(value);
             GUILayout.EndHorizontal();
             return value;
