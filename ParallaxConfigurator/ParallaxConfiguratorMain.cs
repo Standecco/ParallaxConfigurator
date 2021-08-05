@@ -2,101 +2,39 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using LibNoise.Models;
 using Parallax;
 using ParallaxQualityLibrary;
 using UniLinq;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace ParallaxConfigurator
 {
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class ParallaxConfiguratorMain : MonoBehaviour
     {
-        public static bool ShowUI { get; set; }
-
-        private static ParallaxInFlightOperations ParallaxInFlight { get; set; }
-        private static ParallaxBody  parallaxBody;
-        private static Rect          window       = new Rect(100, 100, 450, 200);
-        private static bool          showTextures = false;
-        private static string        lastBodyName;
-        private static bool          anyValueHasChanged;
-        private static bool          firstRun  = true;
-        
-        private static string loadConfigPopupDialogText = "";
+        public static  ParallaxBody ParallaxBody;
+        private static Rect         window       = new Rect(100, 100, 450, 200);
+        private static bool         showTextures = false;
+        private static string       lastBodyName;
+        private static bool         anyValueHasChanged;
+        private static bool         firstRun = true;
 
         public static Dictionary<string, ParallaxBody> ParallaxBodiesOriginal;
 
         private static readonly Dictionary<string, PropertyInfo> VarProperties     = new Dictionary<string, PropertyInfo>();
         private static readonly Dictionary<string, PropertyInfo> TextureProperties = new Dictionary<string, PropertyInfo>();
+        public static bool ShowUI { get; set; }
 
-        public static readonly Dictionary<string, string>
-            VarFromLabels = new Dictionary<string, string>
-            {
-                { "Surface texture scale", nameof(parallaxBody._SurfaceTextureScale) },
-                { "Displacement offset", nameof(parallaxBody._displacement_offset) },
-                { "Displacement scale", nameof(parallaxBody._displacement_scale) },
-                { "Emission color", nameof(parallaxBody._EmissionColor) },
-                { "Gloss", nameof(parallaxBody._Gloss) },
-                { "Hapke", nameof(parallaxBody._Hapke) },
-                { "Metallic", nameof(parallaxBody._Metallic) },
-                { "Metallic tint", nameof(parallaxBody._MetallicTint) },
-                { "Normal specular influence", nameof(parallaxBody._NormalSpecularInfluence) },
-                { "Low start", nameof(parallaxBody._LowStart) },
-                { "Low end", nameof(parallaxBody._LowEnd) },
-                { "High start", nameof(parallaxBody._HighStart) },
-                { "High end", nameof(parallaxBody._HighEnd) },
-                { "Steep contrast", nameof(parallaxBody._SteepContrast) },
-                { "Steep midpoint", nameof(parallaxBody._SteepMidpoint) },
-                { "Steep power", nameof(parallaxBody._SteepPower) },
-                { "Bump map", nameof(parallaxBody._BumpMap) },
-                { "Bump map mid", nameof(parallaxBody._BumpMapMid) },
-                { "Bump map high", nameof(parallaxBody._BumpMapHigh) },
-                { "Bump map steep", nameof(parallaxBody._BumpMapSteep) },
-                { "Steep tex", nameof(parallaxBody._SteepTex) },
-                { "Surface texture", nameof(parallaxBody._SurfaceTexture) },
-                { "Surface texture high", nameof(parallaxBody._SurfaceTextureHigh) },
-                { "Surface texture mid", nameof(parallaxBody._SurfaceTextureMid) },
-                { "Disp tex", nameof(parallaxBody._DispTex) },
-                { "Influence map", nameof(parallaxBody._InfluenceMap) }
-            };
+        private static ParallaxInFlightOperations ParallaxInFlight { get; set; }
 
-        public static readonly Dictionary<string, string>
-            LabelFromVar = new Dictionary<string, string>
-            {
-                { nameof(parallaxBody._SurfaceTextureScale), "Surface texture scale" },
-                { nameof(parallaxBody._displacement_offset), "Displacement offset" },
-                { nameof(parallaxBody._displacement_scale), "Displacement scale" },
-                { nameof(parallaxBody._EmissionColor), "Emission color" },
-                { nameof(parallaxBody._Gloss), "Gloss" },
-                { nameof(parallaxBody._Hapke), "Hapke" },
-                { nameof(parallaxBody._Metallic), "Metallic" },
-                { nameof(parallaxBody._MetallicTint), "Metallic tint" },
-                { nameof(parallaxBody._NormalSpecularInfluence), "Normal specular influence" },
-                { nameof(parallaxBody._LowStart), "Low start" },
-                { nameof(parallaxBody._LowEnd), "Low end" },
-                { nameof(parallaxBody._HighStart), "High start" },
-                { nameof(parallaxBody._HighEnd), "High end" },
-                { nameof(parallaxBody._SteepContrast), "Steep contrast" },
-                { nameof(parallaxBody._SteepMidpoint), "Steep midpoint" },
-                { nameof(parallaxBody._SteepPower), "Steep power" },
-                { nameof(parallaxBody._BumpMap), "Bump map" },
-                { nameof(parallaxBody._BumpMapMid), "Bump map mid" },
-                { nameof(parallaxBody._BumpMapHigh), "Bump map high" },
-                { nameof(parallaxBody._BumpMapSteep), "Bump map steep" },
-                { nameof(parallaxBody._SteepTex), "Steep tex" },
-                { nameof(parallaxBody._SurfaceTexture), "Surface texture" },
-                { nameof(parallaxBody._SurfaceTextureHigh), "Surface texture high" },
-                { nameof(parallaxBody._SurfaceTextureMid), "Surface texture mid" },
-                { nameof(parallaxBody._DispTex), "Disp tex" },
-                { nameof(parallaxBody._InfluenceMap), "Influence map" },
-            };
+        private static Dictionary<string, string> Labels => Utils.LabelFromVar;
 
         public void Start()
         {
             CelestialBody currentBody = FlightGlobals.currentMainBody;
             lastBodyName = currentBody.name;
-            parallaxBody = ParallaxBodies.parallaxBodies[currentBody.name];
+            ParallaxBody = ParallaxBodies.parallaxBodies[currentBody.name];
             ParallaxInFlight = FindObjectOfType<ParallaxInFlightOperations>();
 
             if (firstRun)
@@ -136,29 +74,29 @@ namespace ParallaxConfigurator
 
             if (GUILayout.Button("Save current config to ParallaxConfigurator folder"))
             {
-                SaveConfigs(parallaxBody.bodyName + ".txt");
+                SaveConfigs(ParallaxBody.bodyName + ".txt");
             }
             if (GUILayout.Button("Load config from file"))
             {
-                LoadConfigs(parallaxBody.bodyName + ".txt");
+                LoadConfigs(ParallaxBody.bodyName + ".txt");
             }
 
-            parallaxBody._SurfaceTextureScale = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._SurfaceTextureScale)], parallaxBody._SurfaceTextureScale);
-            parallaxBody._displacement_offset = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._displacement_offset)], parallaxBody._displacement_offset);
-            parallaxBody._displacement_scale = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._displacement_scale)], parallaxBody._displacement_scale);
-            parallaxBody._EmissionColor = TextAreaLabelColor(LabelFromVar[nameof(parallaxBody._EmissionColor)], parallaxBody._EmissionColor);
-            parallaxBody._Gloss = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._Gloss)], parallaxBody._Gloss);
-            parallaxBody._Hapke = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._Hapke)], parallaxBody._Hapke);
-            parallaxBody._Metallic = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._Metallic)], parallaxBody._Metallic);
-            parallaxBody._MetallicTint = TextAreaLabelColor(LabelFromVar[nameof(parallaxBody._MetallicTint)], parallaxBody._MetallicTint);
-            parallaxBody._NormalSpecularInfluence = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._NormalSpecularInfluence)], parallaxBody._NormalSpecularInfluence);
-            parallaxBody._LowStart = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._LowStart)], parallaxBody._LowStart);
-            parallaxBody._LowEnd = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._LowEnd)], parallaxBody._LowEnd);
-            parallaxBody._HighStart = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._HighStart)], parallaxBody._HighStart);
-            parallaxBody._HighEnd = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._HighEnd)], parallaxBody._HighEnd);
-            parallaxBody._SteepContrast = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._SteepContrast)], parallaxBody._SteepContrast);
-            parallaxBody._SteepMidpoint = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._SteepMidpoint)], parallaxBody._SteepMidpoint);
-            parallaxBody._SteepPower = TextAreaLabelFloat(LabelFromVar[nameof(parallaxBody._SteepPower)], parallaxBody._SteepPower);
+            ParallaxBody._SurfaceTextureScale = TextAreaLabelFloat(Labels[nameof(ParallaxBody._SurfaceTextureScale)], ParallaxBody._SurfaceTextureScale);
+            ParallaxBody._displacement_offset = TextAreaLabelFloat(Labels[nameof(ParallaxBody._displacement_offset)], ParallaxBody._displacement_offset);
+            ParallaxBody._displacement_scale = TextAreaLabelFloat(Labels[nameof(ParallaxBody._displacement_scale)], ParallaxBody._displacement_scale);
+            ParallaxBody._EmissionColor = TextAreaLabelColor(Labels[nameof(ParallaxBody._EmissionColor)], ParallaxBody._EmissionColor);
+            ParallaxBody._Gloss = TextAreaLabelFloat(Labels[nameof(ParallaxBody._Gloss)], ParallaxBody._Gloss);
+            ParallaxBody._Hapke = TextAreaLabelFloat(Labels[nameof(ParallaxBody._Hapke)], ParallaxBody._Hapke);
+            ParallaxBody._Metallic = TextAreaLabelFloat(Labels[nameof(ParallaxBody._Metallic)], ParallaxBody._Metallic);
+            ParallaxBody._MetallicTint = TextAreaLabelColor(Labels[nameof(ParallaxBody._MetallicTint)], ParallaxBody._MetallicTint);
+            ParallaxBody._NormalSpecularInfluence = TextAreaLabelFloat(Labels[nameof(ParallaxBody._NormalSpecularInfluence)], ParallaxBody._NormalSpecularInfluence);
+            ParallaxBody._LowStart = TextAreaLabelFloat(Labels[nameof(ParallaxBody._LowStart)], ParallaxBody._LowStart);
+            ParallaxBody._LowEnd = TextAreaLabelFloat(Labels[nameof(ParallaxBody._LowEnd)], ParallaxBody._LowEnd);
+            ParallaxBody._HighStart = TextAreaLabelFloat(Labels[nameof(ParallaxBody._HighStart)], ParallaxBody._HighStart);
+            ParallaxBody._HighEnd = TextAreaLabelFloat(Labels[nameof(ParallaxBody._HighEnd)], ParallaxBody._HighEnd);
+            ParallaxBody._SteepContrast = TextAreaLabelFloat(Labels[nameof(ParallaxBody._SteepContrast)], ParallaxBody._SteepContrast);
+            ParallaxBody._SteepMidpoint = TextAreaLabelFloat(Labels[nameof(ParallaxBody._SteepMidpoint)], ParallaxBody._SteepMidpoint);
+            ParallaxBody._SteepPower = TextAreaLabelFloat(Labels[nameof(ParallaxBody._SteepPower)], ParallaxBody._SteepPower);
 
             GUILayout.EndVertical();
 
@@ -172,16 +110,16 @@ namespace ParallaxConfigurator
             {
                 GUILayout.BeginVertical();
 
-                parallaxBody._BumpMap = TextAreaLabelTexture(LabelFromVar[nameof(parallaxBody._BumpMap)], parallaxBody._BumpMap);
-                parallaxBody._BumpMapMid = TextAreaLabelTexture(LabelFromVar[nameof(parallaxBody._BumpMapMid)], parallaxBody._BumpMapMid);
-                parallaxBody._BumpMapHigh = TextAreaLabelTexture(LabelFromVar[nameof(parallaxBody._BumpMapHigh)], parallaxBody._BumpMapHigh);
-                parallaxBody._BumpMapSteep = TextAreaLabelTexture(LabelFromVar[nameof(parallaxBody._BumpMapSteep)], parallaxBody._BumpMapSteep);
-                parallaxBody._SteepTex = TextAreaLabelTexture(LabelFromVar[nameof(parallaxBody._SteepTex)], parallaxBody._SteepTex);
-                parallaxBody._SurfaceTexture = TextAreaLabelTexture(LabelFromVar[nameof(parallaxBody._SurfaceTexture)], parallaxBody._SurfaceTexture);
-                parallaxBody._SurfaceTextureHigh = TextAreaLabelTexture(LabelFromVar[nameof(parallaxBody._SurfaceTextureHigh)], parallaxBody._SurfaceTextureHigh);
-                parallaxBody._SurfaceTextureMid = TextAreaLabelTexture(LabelFromVar[nameof(parallaxBody._SurfaceTextureMid)], parallaxBody._SurfaceTextureMid);
-                parallaxBody._DispTex = TextAreaLabelTexture(LabelFromVar[nameof(parallaxBody._DispTex)], parallaxBody._DispTex);
-                parallaxBody._InfluenceMap = TextAreaLabelTexture(LabelFromVar[nameof(parallaxBody._InfluenceMap)], parallaxBody._InfluenceMap);
+                ParallaxBody._BumpMap = TextAreaLabelTexture(Labels[nameof(ParallaxBody._BumpMap)], ParallaxBody._BumpMap);
+                ParallaxBody._BumpMapMid = TextAreaLabelTexture(Labels[nameof(ParallaxBody._BumpMapMid)], ParallaxBody._BumpMapMid);
+                ParallaxBody._BumpMapHigh = TextAreaLabelTexture(Labels[nameof(ParallaxBody._BumpMapHigh)], ParallaxBody._BumpMapHigh);
+                ParallaxBody._BumpMapSteep = TextAreaLabelTexture(Labels[nameof(ParallaxBody._BumpMapSteep)], ParallaxBody._BumpMapSteep);
+                ParallaxBody._SteepTex = TextAreaLabelTexture(Labels[nameof(ParallaxBody._SteepTex)], ParallaxBody._SteepTex);
+                ParallaxBody._SurfaceTexture = TextAreaLabelTexture(Labels[nameof(ParallaxBody._SurfaceTexture)], ParallaxBody._SurfaceTexture);
+                ParallaxBody._SurfaceTextureHigh = TextAreaLabelTexture(Labels[nameof(ParallaxBody._SurfaceTextureHigh)], ParallaxBody._SurfaceTextureHigh);
+                ParallaxBody._SurfaceTextureMid = TextAreaLabelTexture(Labels[nameof(ParallaxBody._SurfaceTextureMid)], ParallaxBody._SurfaceTextureMid);
+                ParallaxBody._DispTex = TextAreaLabelTexture(Labels[nameof(ParallaxBody._DispTex)], ParallaxBody._DispTex);
+                ParallaxBody._InfluenceMap = TextAreaLabelTexture(Labels[nameof(ParallaxBody._InfluenceMap)], ParallaxBody._InfluenceMap);
 
                 GUILayout.EndVertical();
             }
@@ -265,7 +203,7 @@ namespace ParallaxConfigurator
             foreach (PropertyInfo shaderInfo in parallaxShaderInfos)
             {
                 // get value object of the examined parallax shader
-                var thisParallaxShader = (ParallaxQualityLibrary.Parallax) shaderInfo.GetValue(parallaxBody);
+                var thisParallaxShader = (ParallaxQualityLibrary.Parallax) shaderInfo.GetValue(ParallaxBody);
 
                 foreach (string shaderVar in thisParallaxShader.shaderVars)
                 {
@@ -276,7 +214,7 @@ namespace ParallaxConfigurator
                     }
 
                     // get value object for this variable
-                    object storedVar = bodyType.GetProperty(valueToReplaceWith)?.GetValue(parallaxBody);
+                    object storedVar = bodyType.GetProperty(valueToReplaceWith)?.GetValue(ParallaxBody);
                     // get material for the examined parallax shader
                     var shaderMat = (Material) parallaxShaderType.GetProperty("parallaxMaterial")?.GetValue(thisParallaxShader);
                     // get type of the property (float, Color or string)
@@ -309,11 +247,11 @@ namespace ParallaxConfigurator
                             new DialogGUIFlexibleSpace(),
                             new DialogGUIButton("Append", () => WriteConfigToFile(path, true), 230.0f, 30.0f, true),
                             new DialogGUIButton("Overwrite", () => WriteConfigToFile(path, false), 230.0f, 30.0f, true)
-                        )
-                    ),
+                            )
+                        ),
                     false,
                     HighLogic.UISkin
-                );
+                    );
             }
             else
             {
@@ -337,13 +275,13 @@ namespace ParallaxConfigurator
 
                     if (varProperty.PropertyType == typeof(Color))
                     {
-                        var col = (Color) varProperty.GetValue(parallaxBody);
+                        var col = (Color) varProperty.GetValue(ParallaxBody);
 
                         line += $"{col.r}, {col.g}, {col.b}, {col.a}";
                     }
                     else
                     {
-                        line += varProperty.GetValue(parallaxBody).ToString();
+                        line += varProperty.GetValue(ParallaxBody).ToString();
                     }
 
                     file.WriteLine(line);
@@ -352,7 +290,7 @@ namespace ParallaxConfigurator
                 {
                     string line = "\t" + texProperty.Name + " = ";
 
-                    line += texProperty.GetValue(parallaxBody);
+                    line += texProperty.GetValue(ParallaxBody);
 
                     file.WriteLine(line);
                 }
@@ -379,7 +317,7 @@ namespace ParallaxConfigurator
                     "Close",
                     false,
                     HighLogic.UISkin
-                );
+                    );
             }
             else
             {
@@ -396,7 +334,7 @@ namespace ParallaxConfigurator
             int bracketCounter = 0;
 
             // count existing configs
-            foreach(var line in lines)
+            foreach (var line in lines)
             {
                 if (line.StartsWith("{")) // config started
                 {
@@ -414,7 +352,7 @@ namespace ParallaxConfigurator
 
             if (configs == 1)
             {
-                loaded = ReadConfigFromFileAtIndex(lines, 0);
+                loaded = ReadAndLoadConfigFromFile(lines, 0);
             }
             else if (configs > 1)
             {
@@ -431,78 +369,74 @@ namespace ParallaxConfigurator
 
         private static void SpawnConfigSelectionPopupDialog(string[] lines, int maxIndex)
         {
+            var dialog = new List<DialogGUIBase>();
+            var buttons = new List<DialogGUIHorizontalLayout>();
+
+            // add button for each config found
+            for (int i = maxIndex; i >= 0; i--)
+            {
+                var button = new DialogGUIButton<int>(GetDateFromConfigIndex(lines, i, maxIndex), (int n) => ReadAndLoadConfigFromFile(lines, n), i, true);
+                var h = new DialogGUIHorizontalLayout(true, false, 4, new RectOffset(), TextAnchor.MiddleCenter, button);
+
+                buttons.Add(h);
+            }
+
+            // create scroll list from buttons
+            var scrollList = new DialogGUIBase[buttons.Count + 1];
+            scrollList[0] = new DialogGUIContentSizer(ContentSizeFitter.FitMode.Unconstrained, ContentSizeFitter.FitMode.PreferredSize, true);
+            for (int i = 0; i < buttons.Count; i++)
+            {
+                scrollList[i + 1] = buttons[i];
+            }
+
+            // add scroll list to dialog
+            dialog.Add(new DialogGUIScrollList(Vector2.one, false, true,
+                new DialogGUIVerticalLayout(10, 100, 4, new RectOffset(6, 24, 10, 10), TextAnchor.MiddleLeft, scrollList)
+                ));
+
+            // add spacing and cancel button
+            dialog.Add(new DialogGUISpace(4));
+            dialog.Add(new DialogGUIHorizontalLayout(
+                    new DialogGUIFlexibleSpace(),
+                    new DialogGUIButton("Cancel", delegate {}),
+                    new DialogGUIFlexibleSpace()
+                    )
+                );
+
             PopupDialog.SpawnPopupDialog(
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 new MultiOptionDialog(
                     "ParallaxConfiguratorMultipleConfigs",
-                    $"Found {maxIndex + 1} configs. Write an index to select a config. A larger index corresponds to an older config",
-                    "Attention",
+                    "Choose a config:",
+                    $"Detected {maxIndex + 1} configs",
                     HighLogic.UISkin,
-                    new Rect(0.5f, 0.5f, 300f, 150f),
-                    new DialogGUIFlexibleSpace(),
-                    new DialogGUIVerticalLayout(
-                        new DialogGUIHorizontalLayout(
-                            new DialogGUITextInput(
-                                loadConfigPopupDialogText,
-                                false,
-                                10,
-                                str =>
-                                {
-                                    return loadConfigPopupDialogText = str;
-                                },
-                                200f,
-                                25f
-                            ),
-                            new DialogGUILabel(
-                                () => GetDateFromConfigIndex(lines, ParseConfigInt(loadConfigPopupDialogText, maxIndex), maxIndex)
-                            )
-                        ),
-                        new DialogGUIFlexibleSpace(),
-                        new DialogGUIButton("Load", delegate
-                        {
-                            ReadConfigFromFileAtIndex(lines, ParseConfigInt(loadConfigPopupDialogText, maxIndex));
-                        }, 290.0f, 30.0f, true)
-                    )
-                ),
+                    new Rect(0.5f, 0.5f, 300f, 200f),
+                    dialog.ToArray()
+                    ),
                 false,
                 HighLogic.UISkin
-            );
+                );
         }
 
         private static string GetDateFromConfigIndex(string[] lines, int index, int maxValue)
         {
-            if (index == maxValue)
-                return "latest";
-            
+            string date = null;
+
             string[] dateLines = lines.Where(l => l.StartsWith("// CONFIGS FROM ")).ToArray();
 
-            string date = null;
-            
             if (index < dateLines.Length)
             {
                 date = dateLines[index]?.Remove(0, 16);
+
+                if (index == maxValue)
+                    date += " (latest)";
             }
-            
+
             return date ?? "invalid";
         }
 
-        private static int ParseConfigInt(string str, int maxValue)
-        {
-            // if invalid return latest
-            if (!int.TryParse(str, out int index))
-                return maxValue;
-            
-            // clamp and invert index
-            if (index < 0)
-                return maxValue;
-            if (index > maxValue)
-                return 0;
-
-            return maxValue - index;
-        }
-
-        private static bool ReadConfigFromFileAtIndex(string[] lines, int index)
+        private static bool ReadAndLoadConfigFromFile(string[] lines, int index)
         {
             int counter = -1;
             bool valid = false;
@@ -512,27 +446,27 @@ namespace ParallaxConfigurator
             {
                 if (line.StartsWith("{"))
                     counter++;
-                
+
                 // ignore line if it is not in the right config or if it is a comment
-                if(counter != index || line.StartsWith("//"))
+                if (counter != index || line.StartsWith("//"))
                     continue;
-                
+
                 // if config is over, break
                 if (line.StartsWith("}"))
                 {
                     valid = true;
                     break;
                 }
-                
+
                 // remove partial comments
                 int commentIndex;
                 if ((commentIndex = line.IndexOf("//", StringComparison.Ordinal)) != -1)
                     line.Remove(commentIndex);
 
                 string[] array = line.Split('=');
-                if(array.Length != 2)
+                if (array.Length != 2)
                     continue;
-                
+
                 SetVariableValueFromName(array[0].Trim(), array[1].Trim());
             }
 
@@ -542,31 +476,31 @@ namespace ParallaxConfigurator
                 Debug.Log($"[ParallaxConfigurator] unable to read config #{index}");
                 return false;
             }
-            
+
             UpdateShaderValues();
             return true;
         }
 
         private static void SetVariableValueFromName(string varName, string value)
         {
-            if(VarProperties.ContainsKey(varName))
+            if (VarProperties.ContainsKey(varName))
             {
                 PropertyInfo propInfo = VarProperties[varName];
 
                 if (propInfo.PropertyType == typeof(Color))
                 {
-                    propInfo.SetValue(parallaxBody, value.ForceParseColor(new Color()));
+                    propInfo.SetValue(ParallaxBody, value.ForceParseColor(new Color()));
                 }
                 else
                 {
-                    propInfo.SetValue(parallaxBody, value.ForceParseFloat());
+                    propInfo.SetValue(ParallaxBody, value.ForceParseFloat());
                 }
             }
             else if (TextureProperties.ContainsKey(varName))
             {
                 PropertyInfo propInfo = TextureProperties[varName];
-                
-                propInfo.SetValue(parallaxBody, value);
+
+                propInfo.SetValue(ParallaxBody, value);
             }
         }
     }

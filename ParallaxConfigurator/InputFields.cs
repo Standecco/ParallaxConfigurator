@@ -1,10 +1,6 @@
 ﻿using System;
-using UnityEngine;
 using System.Globalization;
-using System.Reflection;
-using Parallax;
-using ParallaxQualityLibrary;
-
+using UnityEngine;
 
 namespace ParallaxConfigurator
 {
@@ -229,9 +225,9 @@ namespace ParallaxConfigurator
             GUILayout.FlexibleSpace();
 
             value = FloatField(value);
-            
+
             if (GUILayout.Button("Undo", ResetButtonStyle))
-                value = (float) GetVariableOriginalValue(ParallaxConfiguratorMain.VarFromLabels[label]);
+                value = (float) Utils.GetVariableOriginalValue(Utils.VarFromLabels[label]);
 
             GUILayout.EndHorizontal();
             return value;
@@ -247,9 +243,9 @@ namespace ParallaxConfigurator
             GUILayout.FlexibleSpace();
 
             value = ColorField(value);
-            
+
             if (GUILayout.Button("Undo", ResetButtonStyle))
-                value = (Color) GetVariableOriginalValue(ParallaxConfiguratorMain.VarFromLabels[label]);
+                value = (Color) Utils.GetVariableOriginalValue(Utils.VarFromLabels[label]);
 
             GUILayout.EndHorizontal();
             return value;
@@ -263,24 +259,14 @@ namespace ParallaxConfigurator
             GUILayout.BeginHorizontal();
             GUILayout.Label(label + " [Texture] ", GUILayout.ExpandWidth(true));
             GUILayout.FlexibleSpace();
-            
+
             value = TexField(value);
-            
-            if(GUILayout.Button("Undo", ResetButtonStyle))
-                value = (string) GetVariableOriginalValue(ParallaxConfiguratorMain.VarFromLabels[label]);
+
+            if (GUILayout.Button("Undo", ResetButtonStyle))
+                value = (string) Utils.GetVariableOriginalValue(Utils.VarFromLabels[label]);
 
             GUILayout.EndHorizontal();
             return value;
-        }
-
-        private static object GetVariableOriginalValue(string varName)
-        {
-            Debug.Log($"[ParallaxConfigurator] Resetting {varName} to original value");
-            
-            ParallaxBody originalBody = ParallaxConfiguratorMain.ParallaxBodiesOriginal[FlightGlobals.currentMainBody.name];
-            PropertyInfo originalProperty = typeof(ParallaxBody).GetProperty(varName, BindingFlags.Instance | BindingFlags.Public);
-
-            return originalProperty?.GetValue(originalBody);
         }
     }
 }

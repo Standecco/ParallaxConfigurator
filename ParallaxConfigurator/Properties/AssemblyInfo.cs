@@ -33,3 +33,7 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("1.0.0.0")]
 [assembly: AssemblyFileVersion("1.0.0.0")]
+
+[assembly: KSPAssembly("ParallaxConfigurator", 1, 0)]
+[assembly: KSPAssemblyDependency("Parallax", 1, 0)]
+[assembly: KSPAssemblyDependency("ParallaxQualityLibrary", 1, 0)]
