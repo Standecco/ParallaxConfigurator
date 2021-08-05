@@ -1,5 +1,5 @@
 # ParallaxConfigurator
-An in-game tool to quickly test changes for Parallax configs.
+An in-game tool to quickly test changes for [Parallax](https://github.com/Gameslinx/Tessellation) configs.
 
 ## How to use:
 Press **Ctrl+P** once in flight. It will open the configurator, and you should figure it out easily from there.
