@@ -1,6 +1,9 @@
 ﻿using System;
 using UnityEngine;
 using System.Globalization;
+using System.Reflection;
+using Parallax;
+using ParallaxQualityLibrary;
 
 
 namespace ParallaxConfigurator
@@ -18,7 +21,10 @@ namespace ParallaxConfigurator
         private static string activeTexFieldLastValue = "";
         private static string activeTexFieldString    = "";
 
-        private static readonly GUIStyle TexStyle = new GUIStyle(GUI.skin.textArea) { wordWrap = true };
+        private static readonly GUIStyle TexStyle         = new GUIStyle(GUI.skin.textArea) { wordWrap = true };
+        private static readonly GUIStyle ResetButtonStyle = new GUIStyle(GUI.skin.button) { fontSize = 9 };
+        private static readonly GUIStyle FloatStyle       = new GUIStyle(GUI.skin.textArea);
+        private static readonly GUIStyle ColorStyle       = new GUIStyle(GUI.skin.textArea);
 
         /// <summary>
         /// Float input field for in-game cfg editing. Behaves exactly like UnityEditor.EditorGUILayout.FloatField
@@ -48,7 +54,7 @@ namespace ParallaxConfigurator
             string str = recorded ? activeFloatFieldString : value.ToString(CultureInfo.InvariantCulture);
 
             // pass it in the text field
-            string strValue = GUI.TextField(pos, str);
+            string strValue = GUI.TextField(pos, str, FloatStyle);
 
             // Update stored value if this one is recorded
             if (recorded)
@@ -80,7 +86,7 @@ namespace ParallaxConfigurator
 
             return value;
         }
-        
+
         /// <summary>
         /// Color input field for in-game cfg editing. Parses basic colors (e.g. "yellow"), as well as any
         /// string in the format "r, g, b, (a)". Ignores any character before or after the comma-separated floats.
@@ -110,7 +116,7 @@ namespace ParallaxConfigurator
             string str = recorded ? activeColorFieldString : value.ToString();
 
             // pass it in the text field
-            string strValue = GUI.TextField(pos, str);
+            string strValue = GUI.TextField(pos, str, ColorStyle);
 
             // Update stored value if this one is recorded
             if (recorded)
@@ -155,9 +161,6 @@ namespace ParallaxConfigurator
             int texFieldID = GUIUtility.GetControlID("TexField".GetHashCode(), FocusType.Keyboard, pos) + 1;
             if (texFieldID == 0)
                 return value;
-
-            TextEditor text = new TextEditor();
-            text.DetectFocusChange();
 
             // has the value been recorded?
             bool recorded = activeFieldID == texFieldID;
@@ -219,41 +222,35 @@ namespace ParallaxConfigurator
         /// <summary>
         /// Float input field with label. Displays the label on the left, and the input field on the right.
         /// </summary>
-        public static float FloatField(GUIContent label, float value, GUIContent labelType = null)
+        public static float FloatField(string label, float value)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label,
-                label != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
-            if (labelType != null)
-            {
-                GUILayout.FlexibleSpace();
-                GUILayout.Label(labelType,
-                    labelType != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
-            }
+            GUILayout.Label(label + " [float] ", GUILayout.ExpandWidth(true));
+            GUILayout.FlexibleSpace();
 
-            GUI.SetNextControlName(label.text);
             value = FloatField(value);
+            
+            if (GUILayout.Button("Undo", ResetButtonStyle))
+                value = (float) GetVariableOriginalValue(ParallaxConfiguratorMain.VarFromLabels[label]);
+
             GUILayout.EndHorizontal();
             return value;
         }
-        
+
         /// <summary>
         /// Color input field with label. Displays the label on the left, and the input field on the right.
         /// </summary>
-        public static Color ColorField(GUIContent label, Color value, GUIContent labelType = null)
+        public static Color ColorField(string label, Color value)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label,
-                label != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
-            if (labelType != null)
-            {
-                GUILayout.FlexibleSpace();
-                GUILayout.Label(labelType,
-                    labelType != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
-            }
+            GUILayout.Label(label + " [Color] ", GUILayout.ExpandWidth(true));
+            GUILayout.FlexibleSpace();
 
-            GUI.SetNextControlName(label.text);
             value = ColorField(value);
+            
+            if (GUILayout.Button("Undo", ResetButtonStyle))
+                value = (Color) GetVariableOriginalValue(ParallaxConfiguratorMain.VarFromLabels[label]);
+
             GUILayout.EndHorizontal();
             return value;
         }
@@ -261,22 +258,29 @@ namespace ParallaxConfigurator
         /// <summary>
         /// Texture path input field with label. Displays the label on the left, and the input field on the right.
         /// </summary>
-        public static string TexField(GUIContent label, string value, GUIContent labelType = null)
+        public static string TexField(string label, string value)
         {
             GUILayout.BeginHorizontal();
-            GUILayout.Label(label,
-                label != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
-            if (labelType != null)
-            {
-                GUILayout.FlexibleSpace();
-                GUILayout.Label(labelType,
-                    labelType != GUIContent.none ? GUILayout.ExpandWidth(true) : GUILayout.ExpandWidth(false));
-            }
-
-            GUI.SetNextControlName(label.text);
+            GUILayout.Label(label + " [Texture] ", GUILayout.ExpandWidth(true));
+            GUILayout.FlexibleSpace();
+            
             value = TexField(value);
+            
+            if(GUILayout.Button("Undo", ResetButtonStyle))
+                value = (string) GetVariableOriginalValue(ParallaxConfiguratorMain.VarFromLabels[label]);
+
             GUILayout.EndHorizontal();
             return value;
+        }
+
+        private static object GetVariableOriginalValue(string varName)
+        {
+            Debug.Log($"[ParallaxConfigurator] Resetting {varName} to original value");
+            
+            ParallaxBody originalBody = ParallaxConfiguratorMain.ParallaxBodiesOriginal[FlightGlobals.currentMainBody.name];
+            PropertyInfo originalProperty = typeof(ParallaxBody).GetProperty(varName, BindingFlags.Instance | BindingFlags.Public);
+
+            return originalProperty?.GetValue(originalBody);
         }
     }
 }
