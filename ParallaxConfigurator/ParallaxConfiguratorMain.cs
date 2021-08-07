@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using Parallax;
 using ParallaxQualityLibrary;
+using PQSModExpansion;
 using UniLinq;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,12 +14,14 @@ namespace ParallaxConfigurator
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class ParallaxConfiguratorMain : MonoBehaviour
     {
-        public static  ParallaxBody ParallaxBody;
-        private static Rect         window       = new Rect(100, 100, 450, 200);
-        private static bool         showTextures = false;
-        private static string       lastBodyName;
-        private static bool         anyValueHasChanged;
-        private static bool         firstRun = true;
+        public static  ParallaxBody     ParallaxBody;
+        public static  PQSMod_Subdivide Subdivision;
+        private static Rect             window       = new Rect(100, 100, 450, 200);
+        private static bool             showTextures = false;
+        private static bool             showPqs      = false;
+        private static string           lastBodyName;
+        private static bool             anyValueHasChanged;
+        private static bool             firstRun = true;
 
         public static Dictionary<string, ParallaxBody> ParallaxBodiesOriginal;
 
@@ -34,8 +37,18 @@ namespace ParallaxConfigurator
         {
             CelestialBody currentBody = FlightGlobals.currentMainBody;
             lastBodyName = currentBody.name;
-            ParallaxBody = ParallaxBodies.parallaxBodies[currentBody.name];
+
+            ParallaxBody = ParallaxBodies.parallaxBodies.ContainsKey(currentBody.name) ? ParallaxBodies.parallaxBodies[currentBody.name] : null;
+
             ParallaxInFlight = FindObjectOfType<ParallaxInFlightOperations>();
+
+            foreach (PQSMod mod in currentBody.GetComponentsInChildren<PQSMod>())
+            {
+                if (mod is PQSMod_Subdivide subdivide)
+                {
+                    Subdivision = subdivide;
+                }
+            }
 
             if (firstRun)
             {
@@ -48,7 +61,23 @@ namespace ParallaxConfigurator
         public void Update()
         {
             if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.P))
-                ShowUI = !ShowUI;
+            {
+                if (ParallaxBody != null)
+                    ShowUI = !ShowUI;
+                else
+                {
+                    PopupDialog.SpawnPopupDialog(
+                        new Vector2(0.5f, 0.5f),
+                        new Vector2(0.5f, 0.5f),
+                        "ParallaxConfiguratorInvalidBody",
+                        "Error",
+                        $"Body {FlightGlobals.currentMainBody.name} is not parallax configured",
+                        "Close",
+                        false,
+                        HighLogic.UISkin
+                        );
+                }
+            }
 
             if (lastBodyName != FlightGlobals.currentMainBody?.name)
                 this.Start();
@@ -124,6 +153,30 @@ namespace ParallaxConfigurator
                 GUILayout.EndVertical();
             }
 
+            if (Subdivision != null)
+            {
+                if (showPqs != GUILayout.Toggle(showPqs, "Show Subdivision parameters (only for testing, can't be saved or loaded)"))
+                {
+                    showPqs = !showPqs;
+                    window = new Rect(window.position.x, window.position.y, 450, 200);
+                }
+
+                if (showPqs)
+                {
+                    GUILayout.BeginVertical();
+
+                    Subdivision.subdivisionLevel = TextAreaLabelInt("Subdivision level", Subdivision.subdivisionLevel);
+                    Subdivision.advancedSubdivisionLevel = TextAreaLabelInt("Advanced Subdivision level", Subdivision.advancedSubdivisionLevel);
+
+                    // TODO: rebuild PQS
+                    GUILayout.EndVertical();
+                }
+            }
+            else
+            {
+                GUILayout.Label("Subdivision PQSMod not found. Make sure you add one.");
+            }
+
             GUI.DragWindow();
         }
 
@@ -147,6 +200,15 @@ namespace ParallaxConfigurator
 
             if (Math.Abs(newValue - value) > 0.001)
                 anyValueHasChanged = true;
+
+            return newValue;
+        }
+
+        private static int TextAreaLabelInt(string label, int value)
+        {
+            GUILayout.BeginHorizontal();
+            int newValue = InputFields.IntField(label, value);
+            GUILayout.EndHorizontal();
 
             return newValue;
         }
