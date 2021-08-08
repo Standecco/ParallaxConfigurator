@@ -165,10 +165,14 @@ namespace ParallaxConfigurator
                 {
                     GUILayout.BeginVertical();
 
-                    Subdivision.subdivisionLevel = TextAreaLabelInt("Subdivision level", Subdivision.subdivisionLevel);
-                    Subdivision.advancedSubdivisionLevel = TextAreaLabelInt("Advanced Subdivision level", Subdivision.advancedSubdivisionLevel);
+                    Subdivision.subdivisionLevel = TextAreaLabelInt("Subdivision level", Subdivision.subdivisionLevel, 0, 5);
+                    Subdivision.advancedSubdivisionLevel = TextAreaLabelInt("Advanced Subdivision level", Subdivision.advancedSubdivisionLevel, 1, 64);
 
-                    // TODO: rebuild PQS
+                    if (GUILayout.Button("Rebuild PQS (may cause a short freeze)"))
+                    {
+                        FlightGlobals.currentMainBody.pqsController.RebuildSphere();
+                    }
+
                     GUILayout.EndVertical();
                 }
             }
@@ -204,10 +208,10 @@ namespace ParallaxConfigurator
             return newValue;
         }
 
-        private static int TextAreaLabelInt(string label, int value)
+        private static int TextAreaLabelInt(string label, int value, int minValue, int maxValue)
         {
             GUILayout.BeginHorizontal();
-            int newValue = InputFields.IntField(label, value);
+            int newValue = InputFields.IntField(label, value, minValue, maxValue);
             GUILayout.EndHorizontal();
 
             return newValue;
