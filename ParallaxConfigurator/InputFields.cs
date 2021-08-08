@@ -234,6 +234,22 @@ namespace ParallaxConfigurator
         }
 
         /// <summary>
+        /// Int input field with label. Displays the label on the left, and the input field on the right.
+        /// Just a FloatField, but with returned value being rounded to nearest int.
+        /// </summary>
+        public static int IntField(string label, float value, int minValue, int maxValue)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label(label + " [float] ", GUILayout.ExpandWidth(true));
+            GUILayout.FlexibleSpace();
+
+            value = FloatField(value);
+
+            GUILayout.EndHorizontal();
+            return Mathf.Clamp(Mathf.RoundToInt(value), minValue, maxValue);
+        }
+
+        /// <summary>
         /// Color input field with label. Displays the label on the left, and the input field on the right.
         /// </summary>
         public static Color ColorField(string label, Color value)

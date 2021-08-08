@@ -60,6 +60,9 @@
         <Reference Include="UnityEngine.UI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
             <Private>False</Private>
         </Reference>
+        <Reference Include="PQSModExpansion, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+            <Private>False</Private>
+        </Reference>
     </ItemGroup>
     <ItemGroup>
         <Compile Include="InputFields.cs" />
